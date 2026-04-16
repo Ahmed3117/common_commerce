@@ -907,15 +907,15 @@ class DashboardAnalyticsView(APIView):
 
         # Stores by government
         stores_by_gov_qs = Store.objects.values('government').annotate(count=Count('id'))
-        gov_name_to_code_map = {name: code for code, name in GOVERNMENT_CHOICES}
+        gov_code_to_name_map = {code: name for code, name in GOVERNMENT_CHOICES}
         
         stores_by_gov = []
         for item in stores_by_gov_qs:
-            gov_name = item['government']
-            if gov_name:  # Skip null/empty government names
+            gov_code = item['government']
+            if gov_code:  # Skip null/empty government codes
                 stores_by_gov.append({
-                    'government_code': gov_name_to_code_map.get(gov_name, 'N/A'),
-                    'government_name': gov_name,
+                    'government_code': gov_code,
+                    'government_name': gov_code_to_name_map.get(gov_code, 'Unknown'),
                     'store_count': item['count']
                 })
 
@@ -926,10 +926,10 @@ class DashboardAnalyticsView(APIView):
             "store_summary": {
                 "active_stores": Store.objects.filter(is_active=True).count() if hasattr(Store, 'is_active') else None,
                 "pending_requests": req_counts.get('pending', 0),
-                "approved_requests": req_counts.get('approved', 0)
+                "accepted_requests": req_counts.get('accepted', 0),
+                "approved_requests": req_counts.get('accepted', 0)
             }
         }
-
 
 
 

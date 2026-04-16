@@ -16,7 +16,6 @@ from accounts.pagination import CustomPageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
-from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.views import APIView
 from accounts.models import User
 from .serializers import *
@@ -428,26 +427,6 @@ class CustomerRatingDetailView(generics.RetrieveUpdateDestroyAPIView):
 class getColors(generics.ListAPIView):
     queryset = Color.objects.all()
     serializer_class = ColorSerializer
-
-class PayRequestListCreateView(generics.ListCreateAPIView):
-    queryset = PayRequest.objects.all()
-    serializer_class = PayRequestSerializer
-    permission_classes = [AllowAny]
-    parser_classes = [MultiPartParser, FormParser]
-    filter_backends = [DjangoFilterBackend, rest_filters.SearchFilter]
-    filterset_fields = ['is_applied', 'pill__pill_number', 'pill__user__name', 'pill__pilladdress__email', 'pill__pilladdress__phone', 'pill__pilladdress__government']
-    search_fields = ['pill__pill_number', 'pill__user__name', 'pill__pilladdress__email', 'pill__pilladdress__phone', 'pill__pilladdress__government']
-
-    def perform_create(self, serializer):
-        pill_id = self.request.data.get('pill')
-        try:
-            user = get_effective_user(self.request)
-            pill = Pill.objects.get(id=pill_id, user=user)
-            if pill.paid:
-                raise serializers.ValidationError("This pill is already paid.")
-            serializer.save(pill=pill)
-        except Pill.DoesNotExist:
-            raise serializers.ValidationError("Pill does not exist or you do not have permission to create a payment request for this pill.")
 
 class ProductsWithActiveDiscountAPIView(APIView):
     def get(self, request):
@@ -1483,41 +1462,6 @@ class PillGiftRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     queryset = PillGift.objects.all()
     serializer_class = PillGiftSerializer
     # permission_classes = [IsAdminOrHasEndpointPermission]
-
-class AdminPayRequestCreateView(generics.CreateAPIView):
-    queryset = PayRequest.objects.all()
-    serializer_class = PayRequestSerializer
-    # permission_classes = [IsAdminOrHasEndpointPermission]
-    parser_classes = [MultiPartParser, FormParser]
-
-    def perform_create(self, serializer):
-        pill_id = self.request.data.get('pill')
-        try:
-            pill = Pill.objects.get(id=pill_id)
-            if pill.paid:
-                raise serializers.ValidationError("This pill is already paid.")
-            serializer.save(pill=pill)
-        except Pill.DoesNotExist:
-            raise serializers.ValidationError("Pill does not exist.")
-        
-class ApplyPayRequestView(APIView):
-    # permission_classes = [IsAdminOrHasEndpointPermission]
-
-    def post(self, request, id):
-        pay_request = get_object_or_404(PayRequest, id=id)
-        if pay_request.is_applied:
-            return Response(
-                {"error": "Pay request already applied"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        with transaction.atomic():
-            pay_request.is_applied = True
-            pay_request.save()
-            pill = pay_request.pill
-            pill.paid = True
-            pill.status = 'p'
-            pill.save()
-        return Response({"status": "Pay request applied successfully"}, status=status.HTTP_200_OK)
 
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated

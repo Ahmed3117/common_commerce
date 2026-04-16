@@ -12,7 +12,7 @@ from django.db.models import Sum
 from django.db import transaction
 from accounts.models import User
 from .models import (
-    BestProduct, Category, CartSettings, CouponDiscount, Discount, LovedProduct, PayRequest, PillAddress, PillGift,
+    BestProduct, Category, CartSettings, CouponDiscount, Discount, LovedProduct, PillAddress, PillGift,
     PillItem, PillStatusLog, PriceDropAlert, ProductDescription, Shipping,
     SpecialProduct, SpinWheelDiscount, SpinWheelResult, SpinWheelSettings, StockAlert,
     SubCategory, Brand, Product, ProductImage, ProductAvailability, Rating, Color, Pill,
@@ -916,7 +916,7 @@ class PillCreateSerializer(serializers.ModelSerializer):
         fields = ['id', 'user', 'user_name', 'user_username', 'items', 'status', 'date_added', 'paid']
         read_only_fields = ['id', 'status', 'date_added', 'paid']
     def get_user_name(self, obj):
-        return obj.user.name
+        return obj.user.name if obj.user else None
 
     def get_user_username(self, obj):
         return obj.user.username if obj.user else None
@@ -968,12 +968,6 @@ class PillStatusLogSerializer(serializers.ModelSerializer):
 
     def get_status_display(self, obj):
         return obj.get_status_display()
-
-class PayRequestSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PayRequest
-        fields = ['id', 'pill', 'image', 'date', 'is_applied']
-        read_only_fields = ['id', 'date']
 
 class ShippingSerializer(serializers.ModelSerializer):
     government_name = serializers.SerializerMethodField()
@@ -1068,13 +1062,11 @@ class PillDetailSerializer(serializers.ModelSerializer):
     items = PillItemSerializer(many=True, read_only=True)
     coupon = CouponDiscountSerializer(read_only=True)
     pilladdress = PillAddressSerializer(read_only=True)
-    gift_discount = PillGiftSerializer(read_only=True)
     shipping_price = serializers.SerializerMethodField()
     status_display = serializers.SerializerMethodField()
     user_name = serializers.SerializerMethodField()
     user_username = serializers.SerializerMethodField()
     status_logs = PillStatusLogSerializer(many=True, read_only=True)
-    pay_requests = PayRequestSerializer(many=True, read_only=True)
     price_without_coupons_or_gifts = serializers.SerializerMethodField()
     coupon_discount = serializers.SerializerMethodField()
     gift_discount = serializers.SerializerMethodField()
@@ -1089,17 +1081,17 @@ class PillDetailSerializer(serializers.ModelSerializer):
         model = Pill
         fields = [
             'id','pill_number','tracking_number', 'user_name', 'user_username', 'items', 'status', 'status_display', 'date_added', 'paid', 'coupon', 'pilladdress', 'gift_discount',
-            'price_without_coupons_or_gifts', 'coupon_discount', 'gift_discount', 'shipping_price', 'final_price', 'status_logs', 'pay_requests','shakeout_invoice_id', 'shakeout_invoice_url',
+            'price_without_coupons_or_gifts', 'coupon_discount', 'gift_discount', 'shipping_price', 'final_price', 'status_logs', 'shakeout_invoice_id', 'shakeout_invoice_url',
             'easypay_invoice_uid','easypay_fawry_ref', 'easypay_invoice_sequence', 'easypay_invoice_url', 'payment_gateway', 'payment_url', 'payment_status'
         ]
         read_only_fields = [
             'id','pill_number', 'tracking_number','user_name', 'user_username', 'items', 'status', 'status_display', 'date_added', 'paid', 'coupon', 'pilladdress', 'gift_discount',
-            'price_without_coupons_or_gifts', 'coupon_discount', 'gift_discount', 'shipping_price', 'final_price', 'status_logs', 'pay_requests','shakeout_invoice_id', 'shakeout_invoice_url',
+            'price_without_coupons_or_gifts', 'coupon_discount', 'gift_discount', 'shipping_price', 'final_price', 'status_logs', 'shakeout_invoice_id', 'shakeout_invoice_url',
             'easypay_invoice_uid','easypay_fawry_ref', 'easypay_invoice_sequence', 'easypay_invoice_url', 'payment_gateway', 'payment_url', 'payment_status'
         ]
 
     def get_user_name(self, obj):
-        return obj.user.name
+        return obj.user.name if obj.user else None
 
     def get_user_username(self, obj):
         return obj.user.username if obj.user else None
@@ -1141,7 +1133,6 @@ class PillDetailSerializer(serializers.ModelSerializer):
 
 class PillSerializer(serializers.ModelSerializer):
     coupon = CouponDiscountSerializer(read_only=True)
-    gift_discount = PillGiftSerializer(read_only=True)
     shipping_price = serializers.SerializerMethodField()
     status_display = serializers.SerializerMethodField()
     user_name = serializers.SerializerMethodField()
@@ -1394,27 +1385,6 @@ class SpinWheelSettingsSerializer(serializers.ModelSerializer):
     def validate_daily_spin_limit(self, value):
         if value <= 0:
             raise serializers.ValidationError("Daily spin limit must be positive.")
-        return value
-
-
-class CartSettingsSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CartSettings
-        fields = ['max_items_in_cart', 'max_quantity_per_item', 'updated_at']
-        read_only_fields = ['updated_at']
-
-    def validate_max_items_in_cart(self, value):
-        if value <= 0:
-            raise serializers.ValidationError("Maximum cart items must be positive.")
-        if value > 50:
-            raise serializers.ValidationError("Maximum cart items cannot exceed 50.")
-        return value
-
-    def validate_max_quantity_per_item(self, value):
-        if value <= 0:
-            raise serializers.ValidationError("Maximum quantity per item must be positive.")
-        if value > 100:
-            raise serializers.ValidationError("Maximum quantity per item cannot exceed 100.")
         return value
 
 

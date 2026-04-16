@@ -90,7 +90,7 @@ class Store(models.Model):
     created_at = models.DateTimeField(default=timezone.now) 
 
     def __str__(self):
-        return self.name
+        return self.store_name or f"Store #{self.pk}"
     
     class Meta:
         ordering = ['-created_at']
@@ -112,4 +112,5 @@ class StoreReporting(models.Model):
     is_handled = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"Report on {self.store.name} by {self.user.username}"
+        store_name = self.store.store_name or f"Store #{self.store_id}"
+        return f"Report on {store_name} by {self.user.username}"

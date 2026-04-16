@@ -31,7 +31,6 @@ urlpatterns = [
     path('ratings/', views.CustomerRatingListCreateView.as_view(), name='customer-rating-list-create'),
     path('ratings/<int:pk>/', views.CustomerRatingDetailView.as_view(), name='customer-rating-detail'),
     path('colors/', views.getColors.as_view(), name='color-list'),
-    path('pay-requests/', views.PayRequestListCreateView.as_view(), name='pay-request-list-create'),
     path('discounts/active/', views.ProductsWithActiveDiscountAPIView.as_view(), name='products-with-discount'),
     path('loved-products/', views.LovedProductListCreateView.as_view(), name='loved-product-list-create'),
     path('loved-products/<int:pk>/', views.LovedProductRetrieveDestroyView.as_view(), name='loved-product-detail'),
@@ -96,8 +95,6 @@ urlpatterns = [
     path('dashboard/ratings/<int:pk>/', views.RatingDetailView.as_view(), name='admin-rating-detail'),
     path('dashboard/product-availabilities/', views.ProductAvailabilityListCreateView.as_view(), name='admin-product-availability-list-create'),
     path('dashboard/product-availabilities/<int:pk>/', views.ProductAvailabilityDetailView.as_view(), name='admin-product-availability-detail'),
-    path('dashboard/pay-requests/create/', views.AdminPayRequestCreateView.as_view(), name='admin-pay-request-create'),
-    path('dashboard/pay-requests/<int:id>/apply/', views.ApplyPayRequestView.as_view(), name='admin-pay-request-apply'),
     path('dashboard/spin-wheel/', views.SpinWheelDiscountListCreateView.as_view(), name='spin-wheel-list-create'),
     path('dashboard/spin-wheel/<int:pk>/', views.SpinWheelDiscountRetrieveUpdateDestroyView.as_view(), name='spin-wheel-detail'),
     path('dashboard/spin-wheel-settings/', views.SpinWheelSettingsView.as_view(), name='spin-wheel-settings'),
@@ -143,9 +140,6 @@ urlpatterns = [
     path('pills/<int:pill_id>/resend-easypay-notification/', payment_views.easypay_resend_notification_view, name='resend_easypay_notification'),
     # Generic Payment Invoice Creation Endpoint
     path('pills/<int:pill_id>/create-payment-invoice/', payment_views.create_payment_invoice_view, name='create_payment_invoice'),
-    
-    # Cart Settings
-    path('dashboard/cart-settings/', views.CartSettingsView.as_view(), name='cart-settings'),
     
     # Over Tax Settings
     path('dashboard/over-tax-settings/', views.OverTaxConfigView.as_view(), name='over-tax-settings'),

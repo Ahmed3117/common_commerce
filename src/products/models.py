@@ -1377,17 +1377,6 @@ class Discount(models.Model):
         now = timezone.now()
         return self.is_active and self.discount_start <= now <= self.discount_end
 
-class PayRequest(models.Model):
-    pill = models.ForeignKey('Pill', on_delete=models.CASCADE, related_name='pay_requests')
-    image = models.ImageField(upload_to='pay_requests/')
-    date = models.DateTimeField(auto_now_add=True)
-    is_applied = models.BooleanField(default=False)
-
-    def __str__(self):
-        return f"PayRequest for Pill {self.pill.id} - Applied: {self.is_applied}"
-    class Meta:
-        ordering = ['-date'] 
-
 class LovedProduct(models.Model):
     user = models.ForeignKey(
         User,

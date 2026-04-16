@@ -6,7 +6,7 @@ from django.http import HttpResponse
 from .models import (
     Category, SubCategory, Brand, Product, ProductImage, ProductDescription,
     Color, ProductAvailability, Shipping, PillItem, Pill, PillAddress,
-    PillStatusLog, CouponDiscount, Rating, Discount, PayRequest, LovedProduct,
+    PillStatusLog, CouponDiscount, Rating, Discount, LovedProduct,
     StockAlert, PriceDropAlert, SpecialProduct, SpinWheelDiscount,
     SpinWheelResult, SpinWheelSettings, CartSettings, PillGift,
     OverTaxConfig, FreeShippingOffer
@@ -337,24 +337,6 @@ class RatingAdmin(admin.ModelAdmin):
 class ShippingAdmin(admin.ModelAdmin):
     list_display = ('get_government_display', 'shipping_price')
     list_editable = ('shipping_price',)
-
-@admin.register(PayRequest)
-class PayRequestAdmin(admin.ModelAdmin):
-    list_display = ('pill', 'date', 'is_applied', 'get_image_preview')
-    list_filter = ('is_applied', 'date')
-    search_fields = ('pill__pill_number',)
-    autocomplete_fields = ['pill']
-    actions = ['mark_as_applied']
-
-    @admin.display(description='Image')
-    def get_image_preview(self, obj):
-        if obj.image:
-            return format_html('<a href="{0}" target="_blank"><img src="{0}" width="100"/></a>', obj.image.url)
-        return "No Image"
-
-    @admin.action(description='Mark selected requests as applied')
-    def mark_as_applied(self, request, queryset):
-        queryset.update(is_applied=True)
 
 @admin.register(SpecialProduct)
 class SpecialProductAdmin(admin.ModelAdmin):
