@@ -3,7 +3,7 @@ from rest_framework.viewsets import ViewSet
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAdminUser
+from permissions import IsAdminOrHasEndpointPermission
 from django.db.models import Sum, Count, Avg, F, Q, FloatField, Case, When, BooleanField, Subquery, OuterRef, IntegerField, ExpressionWrapper
 from django.utils import timezone
 from django.utils.dateparse import parse_date
@@ -67,6 +67,7 @@ class ProductPerformanceView(generics.ListAPIView):
     filterset_class = ProductAnalyticsFilter
     ordering_fields = ['total_sold', 'revenue', 'average_rating', 'total_available', 'price', 'name']
     search_fields = ['name']
+    permission_classes = [IsAdminOrHasEndpointPermission]
     #pagination_class = CustomPageNumberPagination  # Add pagination for large datasets
     
     def get_queryset(self):
@@ -196,6 +197,7 @@ class ProductBuyersView(generics.ListAPIView):
     filter_backends = [filters.SearchFilter, django_filters.DjangoFilterBackend]
     search_fields = ['name', 'username']
     filterset_class = ProductBuyerFilter
+    permission_classes = [IsAdminOrHasEndpointPermission]
 
     def get_queryset(self):
         product_id = self.kwargs.get('pk')
@@ -213,6 +215,7 @@ class ProductBuyersView(generics.ListAPIView):
 
 class CategoryPerformanceView(generics.ListAPIView):
     serializer_class = CategoryAnalyticsSerializer
+    permission_classes = [IsAdminOrHasEndpointPermission]
 
     def get_queryset(self):
         # Subquery for total available quantity
@@ -258,6 +261,8 @@ class SalesDashboardView(APIView):
     """
     Consolidated sales dashboard endpoint with multiple metrics
     """
+    permission_classes = [IsAdminOrHasEndpointPermission]
+
     def get(self, request):
         start_date = request.query_params.get('start_date')
         end_date = request.query_params.get('end_date')
@@ -323,6 +328,8 @@ class ProductInventoryView(APIView):
     """
     Consolidated product inventory analysis
     """
+    permission_classes = [IsAdminOrHasEndpointPermission]
+
     def get(self, request):
         # 1. Low stock products
         total_quantity = ProductAvailability.objects.filter(
@@ -361,7 +368,7 @@ class OrderAnalysisView(APIView):
     """
     Consolidated order and pill analysis
     """
-    permission_classes = [IsAdminUser] # Recommended to protect this endpoint
+    permission_classes = [IsAdminOrHasEndpointPermission]
 
     def get(self, request):
         # 1. Pill status counts
@@ -409,6 +416,8 @@ class CustomerActivityView(APIView):
     """
     Customer and government activity analysis
     """
+    permission_classes = [IsAdminOrHasEndpointPermission]
+
     def get(self, request):
         # 1. User role breakdown
         user_types = User.objects.annotate(
@@ -463,6 +472,8 @@ class StoreAnalyticsView(APIView):
     """
     Store-related analytics
     """
+    permission_classes = [IsAdminOrHasEndpointPermission]
+
     def get(self, request):
         # 1. Store requests
         store_requests = StoreRequest.objects.values('status').annotate(
@@ -539,13 +550,15 @@ class DashboardAnalyticsView(APIView):
     """
     
     pagination_class = AnalyticsPagination
+    permission_classes = [IsAdminOrHasEndpointPermission]
 
     def get(self, request, *args, **kwargs):
         try:
             # --- 1. Enhanced Date Handling with Validation ---
-            start_date, end_date, end_date_for_query = self._get_date_range(request)
-            if isinstance(start_date, Response):  # Error response from validation
-                return start_date
+            date_range = self._get_date_range(request)
+            if isinstance(date_range, Response):  # Error response from validation
+                return date_range
+            start_date, end_date, end_date_for_query = date_range
 
             # --- 2. Core Querysets ---
             # Base queryset for sold items with date filtering
@@ -930,6 +943,5 @@ class DashboardAnalyticsView(APIView):
                 "approved_requests": req_counts.get('accepted', 0)
             }
         }
-
 
 

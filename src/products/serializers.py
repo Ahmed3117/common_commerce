@@ -617,9 +617,12 @@ class PillItemCreateUpdateSerializer(serializers.ModelSerializer):
                 'quantity': 'Quantity must be greater than 0.'
             })
 
+        # Normalize size: convert empty string to None for consistent matching
+        normalized_size = size if size else None
+
         availabilities = ProductAvailability.objects.filter(
             product=product,
-            size=size,
+            size=normalized_size,
             color=color
         )
 
@@ -719,6 +722,8 @@ class PillItemCreateSerializer(serializers.ModelSerializer):
         )
         
         total_available = availabilities.aggregate(total=Sum('quantity'))['total'] or 0
+        return total_available
+
     def validate(self, data):
         product = data.get('product')
         quantity = data.get('quantity', 1)
@@ -846,7 +851,8 @@ class AdminPillItemSerializer(PillItemCreateUpdateSerializer):
 class AdminLovedProductSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(),
-        required=False
+        required=False,
+        allow_null=True
     )
     product = serializers.PrimaryKeyRelatedField(
         queryset=Product.objects.all()
@@ -861,6 +867,7 @@ class AdminLovedProductSerializer(serializers.ModelSerializer):
             'created_at'
         ]
         read_only_fields = ['created_at']
+        validators = []
 
     def get_user_details(self, obj):
         return {
@@ -925,15 +932,56 @@ class PillCreateSerializer(serializers.ModelSerializer):
         user = validated_data['user']
         items_data = validated_data.pop('items', None)
         
+        # Check stock availability before creating the pill
+        items_to_check = items_data if items_data else []
+        
+        # If no items in request, get cart items
+        if not items_to_check:
+            cart_items = PillItem.objects.filter(user=user, status__isnull=True)
+            if not cart_items.exists():
+                raise ValidationError("No items provided in request and no items in cart to create a pill.")
+            items_to_check = list(cart_items.values('product', 'quantity', 'size', 'color'))
+        
+        # Validate stock availability for all items
+        for item_data in items_to_check:
+            product = item_data.get('product') if isinstance(item_data, dict) else item_data.product
+            quantity = item_data.get('quantity') if isinstance(item_data, dict) else item_data.quantity
+            size = item_data.get('size') if isinstance(item_data, dict) else item_data.size
+            color = item_data.get('color') if isinstance(item_data, dict) else item_data.color
+            
+            # Normalize size for lookup
+            normalized_size = size if size else None
+            
+            availabilities = ProductAvailability.objects.filter(
+                product=product,
+                size=normalized_size,
+                color=color
+            )
+            
+            if not availabilities.exists():
+                color_name = color.name if color else 'N/A'
+                raise ValidationError(
+                    f"The selected variant (Size: {size or 'N/A'}, Color: {color_name}) is not available for {product.name}."
+                )
+            
+            total_available = availabilities.aggregate(total=Sum('quantity'))['total'] or 0
+            
+            if total_available < quantity:
+                color_name = color.name if color else 'N/A'
+                raise ValidationError(
+                    f"Not enough stock for {product.name} "
+                    f"(Size: {size or 'N/A'}, Color: {color_name}). "
+                    f"Available: {total_available}, Requested: {quantity}."
+                )
+        
         with transaction.atomic():
             # Create the pill first
             pill = Pill.objects.create(**validated_data)
             
             if items_data:
                 # Create new items specifically for this pill
-                pill_items = []
                 for item_data in items_data:
-                    item = PillItem.objects.create(
+                    PillItem.objects.create(
                         user=user,
                         product=item_data['product'],
                         quantity=item_data['quantity'],
@@ -942,8 +990,6 @@ class PillCreateSerializer(serializers.ModelSerializer):
                         status=pill.status,
                         pill=pill  # Link directly to the pill
                     )
-                    pill_items.append(item)
-                pill.items.set(pill_items)
             else:
                 # Move cart items (status=None) to this pill
                 cart_items = PillItem.objects.filter(user=user, status__isnull=True)
@@ -955,7 +1001,6 @@ class PillCreateSerializer(serializers.ModelSerializer):
                     item.status = pill.status
                     item.pill = pill
                     item.save()
-                pill.items.set(cart_items)
             
             return pill
 

@@ -771,6 +771,28 @@ class CreatePaymentInvoiceView(APIView):
             
             logger.info(f"All items available for pill {pill_id}, proceeding with invoice creation")
             
+            # Check pay_method from PillAddress
+            pay_method = None
+            if hasattr(pill, 'pilladdress') and pill.pilladdress:
+                pay_method = pill.pilladdress.pay_method
+                logger.info(f"Pill {pill_id} pay_method: {pay_method}")
+            
+            # Handle Pay on Delivery - no online payment needed
+            if pay_method == 'c':
+                logger.info(f"Pill {pill_id} is Pay on Delivery - skipping online payment")
+                return Response({
+                    'success': True,
+                    'payment_method': 'pay_on_delivery',
+                    'message': 'تم تسجيل طلبك بنجاح. سيتم الدفع عند الاستلام',
+                    'data': {
+                        'pill_id': pill.id,
+                        'pill_number': pill.pill_number,
+                        'final_price': float(pill.final_price()),
+                        'status': pill.status
+                    }
+                }, status=status.HTTP_200_OK)
+            
+            # Continue with online payment
             # Get active payment method from settings
             active_method = getattr(settings, 'ACTIVE_PAYMENT_METHOD', 'shakeout').lower()
             logger.info(f"Active payment method: {active_method}")

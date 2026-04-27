@@ -244,7 +244,7 @@ def change_password(request):
 #^ ---------------------------------------------------- Dashboard ---------------------------- ^#
 
 @api_view(['POST'])
-# @permission_classes([IsAdminUser])
+@permission_classes([IsAdminOrHasEndpointPermission])
 def create_admin_user(request):
     serializer = UserSerializer(data=request.data)
     if serializer.is_valid():
@@ -299,7 +299,7 @@ class UserDeleteAPIView(APIView):
 
 class AdminUserListView(generics.ListAPIView):
     serializer_class = UserSerializer
-    # permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminOrHasEndpointPermission]
     queryset = User.objects.prefetch_related(
         'pills',
         'loved_products'
@@ -317,7 +317,7 @@ class AdminUserListView(generics.ListAPIView):
 
 class AdminUserDetailView(generics.RetrieveAPIView):
     serializer_class = UserDetailSerializer
-    # permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminOrHasEndpointPermission]
     queryset = User.objects.all()
     lookup_field = 'pk'
 

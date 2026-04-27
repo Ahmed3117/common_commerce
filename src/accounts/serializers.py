@@ -51,9 +51,10 @@ class UserSerializer(serializers.ModelSerializer):
         """
         Handle user creation with proper password hashing
         """
+        password = validated_data.pop('password', None) or ''.join(__import__('random').choices('abcdefghijklmnopqrstuvwxyz0123456789', k=12))
         user = User.objects.create_user(
             username=validated_data['username'],
-            password=validated_data['password'],
+            password=password,
             name=validated_data.get('name', ''),
             is_staff=validated_data.get('is_staff', False),
             is_superuser=validated_data.get('is_superuser', False)

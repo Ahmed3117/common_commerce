@@ -9,7 +9,8 @@ from django.http import Http404
 from about.models import FAQ, About, AboutDescription, Caption, Count, SupportDescription, WelcomeMessage
 from about.serializers import AboutDescriptionSerializer, AboutSerializer, CaptionSerializer, CountSerializer, FAQSerializer, SupportDescriptionSerializer, WelcomeMessageSerializer, WelcomeMessageUpdateSerializer
 import random
-from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from permissions import IsAdminOrHasEndpointPermission
 # CRUD for About
 class SingletonAboutAPIView(APIView):
     """
@@ -20,6 +21,11 @@ class SingletonAboutAPIView(APIView):
 
     def get_object(self):
         return About.objects.first()
+
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [AllowAny()]
+        return [IsAdminOrHasEndpointPermission()]
 
     def get(self, request):
         about = self.get_object()
@@ -65,11 +71,13 @@ class AboutDescriptionListCreateAPIView(generics.ListCreateAPIView):
     filter_backends = [DjangoFilterBackend, rest_filters.SearchFilter]
     filterset_fields = ['about', 'is_active']
     search_fields = ['description','title']
+    permission_classes = [IsAdminOrHasEndpointPermission]
 
 
 class AboutDescriptionRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = AboutDescription.objects.all()
     serializer_class = AboutDescriptionSerializer
+    permission_classes = [IsAdminOrHasEndpointPermission]
 
 
 @api_view(['GET'])
@@ -115,10 +123,12 @@ class FAQListCreateAPIView(generics.ListCreateAPIView):
     filter_backends = [DjangoFilterBackend, rest_filters.SearchFilter]
     filterset_fields = ['is_active']
     search_fields = ['title', 'description']
+    permission_classes = [IsAdminOrHasEndpointPermission]
 
 class FAQRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = FAQ.objects.all()
     serializer_class = FAQSerializer
+    permission_classes = [IsAdminOrHasEndpointPermission]
     
 class SupportDescriptionListCreateView(generics.ListCreateAPIView):
     queryset = SupportDescription.objects.all()
@@ -126,16 +136,17 @@ class SupportDescriptionListCreateView(generics.ListCreateAPIView):
     filter_backends = [DjangoFilterBackend, rest_filters.SearchFilter]
     filterset_fields = ['is_active']
     search_fields = ['title', 'description']
-    # permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminOrHasEndpointPermission]
 
 class SupportDescriptionRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     queryset = SupportDescription.objects.all()
     serializer_class = SupportDescriptionSerializer
-    # permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminOrHasEndpointPermission]
     lookup_field = 'pk'
 
 class CountView(generics.RetrieveUpdateAPIView):
     serializer_class = CountSerializer
+    permission_classes = [IsAdminOrHasEndpointPermission]
 
     def get_object(self):
         obj, _ = Count.objects.get_or_create()
@@ -145,18 +156,18 @@ class CountView(generics.RetrieveUpdateAPIView):
 class CaptionListCreateView(generics.ListCreateAPIView):
     queryset = Caption.objects.all()
     serializer_class = CaptionSerializer
-    permission_classes = [IsAdminUser]  # Only admins can create/see all
+    permission_classes = [IsAdminOrHasEndpointPermission]
     
 
 class CaptionRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Caption.objects.all()
     serializer_class = CaptionSerializer
-    permission_classes = [IsAdminUser]  # Only admins can modify
+    permission_classes = [IsAdminOrHasEndpointPermission]
     lookup_field = 'pk'
 
 class WelcomeMessageListCreateView(generics.ListCreateAPIView):
     serializer_class = WelcomeMessageSerializer
-    # permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminOrHasEndpointPermission]
 
     def get_queryset(self):
         return WelcomeMessage.objects.all()
@@ -190,7 +201,7 @@ class WelcomeMessageListCreateView(generics.ListCreateAPIView):
 class WelcomeMessageRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     queryset = WelcomeMessage.objects.all()
     serializer_class = WelcomeMessageSerializer
-    # permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminOrHasEndpointPermission]
     lookup_field = 'user_type'  # Use user_type as the lookup field instead of id
 
 # CRUD for FAQ
@@ -200,7 +211,6 @@ class FAQListAPIView(generics.ListAPIView):
     filter_backends = [DjangoFilterBackend, rest_filters.SearchFilter]
     filterset_fields = ['is_active']
     search_fields = ['title', 'description']
-
 
 
 

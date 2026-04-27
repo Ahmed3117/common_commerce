@@ -58,23 +58,27 @@ class UserAddress(models.Model):
         return f"{self.name} - {self.address}"
 
     def save(self, *args, **kwargs):
-        # If this address is being set as default
-        if self.is_default:
-            # Get all other addresses for this user
-            other_addresses = UserAddress.objects.filter(user=self.user)
-            
-            # If this is an existing instance, exclude it from the update
-            if self.pk:
-                other_addresses = other_addresses.exclude(pk=self.pk)
-            
-            # Update all other addresses to not be default
-            other_addresses.update(is_default=False)
+        from django.db import transaction
         
-        # If this is the first address being created for the user, set it as default
-        elif not UserAddress.objects.filter(user=self.user).exists():
-            self.is_default = True
+        with transaction.atomic():
+            # If this address is being set as default
+            if self.is_default:
+                # Get all other addresses for this user
+                other_addresses = UserAddress.objects.filter(user=self.user)
+                
+                # If this is an existing instance, exclude it from the update
+                if self.pk:
+                    other_addresses = other_addresses.exclude(pk=self.pk)
+                
+                # Update all other addresses to not be default (atomic)
+                other_addresses.update(is_default=False)
             
-        super().save(*args, **kwargs)
+            # If this is the first address being created for the user, set it as default
+            # Use select_for_update to prevent race conditions
+            elif not UserAddress.objects.filter(user=self.user).exists():
+                self.is_default = True
+                
+            super().save(*args, **kwargs)
 
     class Meta:
         verbose_name_plural = 'User Addresses'

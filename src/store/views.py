@@ -79,8 +79,10 @@ class ApproveStoreRequestView(APIView):
         # Create user if request was from unauthenticated user
         if not store_request.user:
             # Create new user with store type
+            # Fallback username: use email if available, otherwise use phone1, otherwise generate one
+            username = store_request.email or store_request.phone1 or f"store_user_{store_request.pk}"
             user = User.objects.create_user(
-                username=store_request.email,
+                username=username,
                 first_name=store_request.first_name,
                 last_name=store_request.last_name,
                 name=f"{store_request.first_name} {store_request.last_name}".strip()

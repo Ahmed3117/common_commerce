@@ -69,8 +69,8 @@ SIZES_CHOICES = [
 ]
 
 PAYMENT_CHOICES = [
-    ('c', 'cash'),
-    ('v', 'visa'),
+    ('c', 'Pay on Delivery'),
+    ('v', 'Online Payment'),
 ]
 
 PAYMENT_GATEWAY_CHOICES = [
@@ -396,6 +396,12 @@ class ProductAvailability(models.Model):
             models.Index(fields=['product', 'date_added']),
             models.Index(fields=['product']),
         ]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(quantity__gte=0),
+                name='quantity_non_negative'
+            )
+        ]
 
     def __str__(self):
         return f"{self.product.name} - {self.size} - {self.color.name if self.color else 'No Color'}"
@@ -424,7 +430,7 @@ class Shipping(models.Model):
         ordering = ['government']  
 
 class PillItem(models.Model):
-    pill = models.ForeignKey('Pill', on_delete=models.CASCADE, null=True, blank=True, related_name='pill_items')
+    pill = models.ForeignKey('Pill', on_delete=models.CASCADE, null=True, blank=True, related_name='items')
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='pill_items', null=True, blank=True)
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='pill_items')
     quantity = models.PositiveIntegerField(default=1)
@@ -470,7 +476,6 @@ class PillItem(models.Model):
 
 class Pill(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='pills', null=True, blank=True)
-    items = models.ManyToManyField(PillItem, related_name='pills')
     status = models.CharField(choices=PILL_STATUS_CHOICES, max_length=2, default='i')
     date_added = models.DateTimeField(auto_now_add=True)
     paid = models.BooleanField(default=False)
@@ -946,29 +951,42 @@ class Pill(models.Model):
     def process_delivery(self):
         """Process items when pill is marked as delivered"""
         with transaction.atomic():
+            # First, collect all items and check stock for all at once
+            items_to_process = []
             for item in self.items.all():
-                try:
-                    color = item.color if item.color else None
-                    availability = ProductAvailability.objects.select_for_update().get(
-                        product=item.product,
-                        size=item.size,
-                        color=color
-                    )
-                    if availability.quantity < item.quantity:
-                        raise ValidationError(
-                            f"Not enough inventory for {item.product.name} "
-                            f"(Size: {item.size}, Color: {item.color.name if item.color else 'N/A'}). "
-                            f"Required: {item.quantity}, Available: {availability.quantity}"
-                        )
-                    availability.quantity -= item.quantity
-                    availability.save()
-                    self._update_pill_item_prices(item)
-                    item.save()
-                except ProductAvailability.DoesNotExist:
+                items_to_process.append(item)
+                color = item.color if item.color else None
+                availability = ProductAvailability.objects.filter(
+                    product=item.product,
+                    size=item.size,
+                    color=color
+                ).first()
+                
+                if not availability:
                     raise ValidationError(
                         f"Inventory record for {item.product.name} "
-                        f"(Size: {item.size}, Color: {item.color.name if item.color else 'N/A'}) not found."
+                        f"(Size: {item.size or 'N/A'}, Color: {item.color.name if item.color else 'N/A'}) not found."
                     )
+                
+                if availability.quantity < item.quantity:
+                    raise ValidationError(
+                        f"Not enough inventory for {item.product.name} "
+                        f"(Size: {item.size or 'N/A'}, Color: {item.color.name if item.color else 'N/A'}). "
+                        f"Required: {item.quantity}, Available: {availability.quantity}"
+                    )
+            
+            # Now lock and update all availability records
+            for item in items_to_process:
+                color = item.color if item.color else None
+                availability = ProductAvailability.objects.select_for_update().get(
+                    product=item.product,
+                    size=item.size,
+                    color=color
+                )
+                availability.quantity -= item.quantity
+                availability.save()
+                self._update_pill_item_prices(item)
+                item.save()
 
     def send_payment_notification(self):
         """Send payment confirmation if phone exists"""
@@ -1338,6 +1356,7 @@ class Rating(models.Model):
 
     class Meta:
         ordering = ['-date_added']
+        unique_together = ['user', 'product']
         indexes = [
             models.Index(fields=['product']),
         ]
