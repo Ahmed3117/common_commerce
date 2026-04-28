@@ -23,6 +23,7 @@ urlpatterns = [
     path('dashboard/users/delete/<int:pk>/', views.UserDeleteAPIView.as_view(), name='user-delete'),
     # user analysis
     path('dashboard/users/', views.AdminUserListView.as_view(), name='admin-user-list'),
+    path('dashboard/users/staff/', views.AdminStaffListView.as_view(), name='admin-staff-list'),
     path('dashboard/users/<int:pk>/', views.AdminUserDetailView.as_view(), name='admin-user-detail'),
 ]
 

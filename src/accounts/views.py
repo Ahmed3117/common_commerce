@@ -9,7 +9,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import ChangePasswordSerializer, UserAddressSerializer, UserDetailSerializer, UserProfileSerializer, UserSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer
 from .models import User, UserAddress
 from django.contrib.auth import update_session_auth_hash
-from rest_framework import generics
+from django.db.models import Q
+from rest_framework import generics, status
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django.db.models import Count
 from permissions import IsAdminOrHasEndpointPermission
@@ -303,6 +304,30 @@ class AdminUserListView(generics.ListAPIView):
     queryset = User.objects.prefetch_related(
         'pills',
         'loved_products'
+    ).exclude(
+        is_staff=True
+    ).exclude(
+        is_superuser=True
+    ).order_by('-date_joined')
+    
+    filter_backends = [SearchFilter, OrderingFilter,DjangoFilterBackend]
+    ordering_fields = [
+        'date_joined', 
+        'cart_items_count', 
+        'loved_count'
+    ]
+    search_fields = ['username', 'name']
+    filterset_fields = ['is_staff', 'is_superuser']
+
+
+class AdminStaffListView(generics.ListAPIView):
+    serializer_class = UserSerializer
+    permission_classes = [IsAdminOrHasEndpointPermission]
+    queryset = User.objects.prefetch_related(
+        'pills',
+        'loved_products'
+    ).filter(
+        Q(is_staff=True) | Q(is_superuser=True)
     ).order_by('-date_joined')
     
     filter_backends = [SearchFilter, OrderingFilter,DjangoFilterBackend]
