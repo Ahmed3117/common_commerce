@@ -65,6 +65,30 @@ class BrandListView(generics.ListAPIView):
     serializer_class = BrandSerializer
     pagination_class = None
 
+class SimpleCategoryListView(generics.ListAPIView):
+    queryset = Category.objects.all()
+    serializer_class = SimpleCategorySerializer
+    pagination_class = None
+    permission_classes = [AllowAny]
+
+class SimpleSubCategoryListView(generics.ListAPIView):
+    queryset = SubCategory.objects.all()
+    serializer_class = SimpleSubCategorySerializer
+    pagination_class = None
+    permission_classes = [AllowAny]
+
+class SimpleBrandListView(generics.ListAPIView):
+    queryset = Brand.objects.all()
+    serializer_class = SimpleBrandSerializer
+    pagination_class = None
+    permission_classes = [AllowAny]
+
+class SimpleProductListView(generics.ListAPIView):
+    queryset = Product.objects.filter(is_active=True)
+    serializer_class = SimpleProductSerializer
+    pagination_class = None
+    permission_classes = [AllowAny]
+
 class ProductListView(generics.ListAPIView):
     queryset = Product.objects.filter(is_active=True)
     serializer_class = ProductSerializer

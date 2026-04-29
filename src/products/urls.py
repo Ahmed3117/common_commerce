@@ -19,6 +19,11 @@ urlpatterns = [
     path('best-products/active/', views.ActiveBestProductsView.as_view(), name='best-products'),
     path('combined-products/', views.CombinedProductsView.as_view(), name='combined-products'),
     path('special-best-products/', views.SpecialBestProductsView.as_view(), name='special-best-products'),
+    # Simple/Lightweight Endpoints (minimal data)
+    path('simple/categories/', views.SimpleCategoryListView.as_view(), name='simple-category-list'),
+    path('simple/subcategories/', views.SimpleSubCategoryListView.as_view(), name='simple-subcategory-list'),
+    path('simple/brands/', views.SimpleBrandListView.as_view(), name='simple-brand-list'),
+    path('simple/products/', views.SimpleProductListView.as_view(), name='simple-product-list'),
     path('cart/', views.UserCartView.as_view(), name='user-cart'),
     path('cart/add/', views.PillItemCreateView.as_view(), name='cart-add'),
     path('cart/update/<int:pk>/', views.PillItemUpdateView.as_view(), name='cart-update'),
