@@ -1,6 +1,18 @@
 from rest_framework import serializers
 from about.models import FAQ, About, AboutDescription, Caption, Count, SupportDescription, WelcomeMessage
 
+
+def absolute_media_url(serializer, file_field):
+    if not file_field:
+        return None
+    if not hasattr(file_field, 'url'):
+        return file_field
+
+    request = serializer.context.get('request')
+    if request:
+        return request.build_absolute_uri(file_field.url)
+    return file_field.url
+
 class AboutDescriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = AboutDescription
@@ -9,6 +21,7 @@ class AboutDescriptionSerializer(serializers.ModelSerializer):
 
 class AboutSerializer(serializers.ModelSerializer):
     descriptions = serializers.SerializerMethodField()
+    image = serializers.SerializerMethodField()
 
     class Meta:
         model = About
@@ -23,6 +36,9 @@ class AboutSerializer(serializers.ModelSerializer):
     def get_descriptions(self, obj):
         descriptions = obj.descriptions.filter(is_active=True).order_by('order')
         return AboutDescriptionSerializer(descriptions, many=True).data
+
+    def get_image(self, obj):
+        return absolute_media_url(self, obj.image)
 
 class SupportDescriptionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -52,6 +68,11 @@ class CountSerializer(serializers.ModelSerializer):
 #------------- FAQ -------------#
 
 class FAQSerializer(serializers.ModelSerializer):
+    file = serializers.SerializerMethodField()
+
     class Meta:
         model = FAQ
         fields = '__all__'
+
+    def get_file(self, obj):
+        return absolute_media_url(self, obj.file)

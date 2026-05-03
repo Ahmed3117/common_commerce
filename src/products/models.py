@@ -245,8 +245,8 @@ class Product(models.Model):
         colors = Color.objects.filter(
             productavailability__product=self,
             productavailability__color__isnull=False
-        ).distinct().values('id', 'name')
-        return [{"color_id": color['id'], "color_name": color['name']} for color in colors]
+        ).distinct().values('id', 'name', 'color_code')
+        return [{"color_id": color['id'], "color_name": color['name'], "color_code": color.get('color_code')} for color in colors]
 
     def available_sizes(self):
         return self.availabilities.filter(size__isnull=False).values_list('size', flat=True).distinct()
@@ -362,7 +362,8 @@ class ProductDescription(models.Model):
 class Color(models.Model):
     name = models.CharField(max_length=50, unique=True)
     degree = models.CharField(max_length=50)
-    created_at = models.DateTimeField(default=timezone.now)  # Added
+    color_code = models.CharField(max_length=7, null=True, blank=True, help_text="Hex color code (e.g., #FF0000)")
+    created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
         ordering = ['-created_at']  # Added

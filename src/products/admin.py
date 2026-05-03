@@ -159,8 +159,8 @@ class ProductAvailabilityAdmin(admin.ModelAdmin):
 
 @admin.register(Color)
 class ColorAdmin(admin.ModelAdmin):
-    list_display = ('name', 'degree')
-    search_fields = ('name', 'degree')
+    list_display = ('name', 'degree', 'color_code')
+    search_fields = ('name', 'degree', 'color_code')
 
 class PillAddressInline(admin.StackedInline):
     model = PillAddress

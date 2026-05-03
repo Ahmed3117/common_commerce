@@ -70,12 +70,16 @@ class SimpleCategoryListView(generics.ListAPIView):
     serializer_class = SimpleCategorySerializer
     pagination_class = None
     permission_classes = [AllowAny]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['type']
 
 class SimpleSubCategoryListView(generics.ListAPIView):
     queryset = SubCategory.objects.all()
     serializer_class = SimpleSubCategorySerializer
     pagination_class = None
     permission_classes = [AllowAny]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['category']
 
 class SimpleBrandListView(generics.ListAPIView):
     queryset = Brand.objects.all()
@@ -86,6 +90,14 @@ class SimpleBrandListView(generics.ListAPIView):
 class SimpleProductListView(generics.ListAPIView):
     queryset = Product.objects.filter(is_active=True)
     serializer_class = SimpleProductSerializer
+    pagination_class = None
+    permission_classes = [AllowAny]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['category', 'sub_category', 'brand', 'type']
+
+class SimpleColorListView(generics.ListAPIView):
+    queryset = Color.objects.all()
+    serializer_class = SimpleColorSerializer
     pagination_class = None
     permission_classes = [AllowAny]
 

@@ -24,6 +24,7 @@ urlpatterns = [
     path('simple/subcategories/', views.SimpleSubCategoryListView.as_view(), name='simple-subcategory-list'),
     path('simple/brands/', views.SimpleBrandListView.as_view(), name='simple-brand-list'),
     path('simple/products/', views.SimpleProductListView.as_view(), name='simple-product-list'),
+    path('simple/colors/', views.SimpleColorListView.as_view(), name='simple-color-list'),
     path('cart/', views.UserCartView.as_view(), name='user-cart'),
     path('cart/add/', views.PillItemCreateView.as_view(), name='cart-add'),
     path('cart/update/<int:pk>/', views.PillItemUpdateView.as_view(), name='cart-update'),

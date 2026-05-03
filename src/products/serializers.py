@@ -6,7 +6,6 @@ class ValidationMessage(APIException):
     default_detail = 'Validation Error'
     default_code = 'invalid'
 from collections import defaultdict
-from urllib.parse import urljoin
 from django.utils import timezone
 from django.db.models import Sum
 from django.db import transaction
@@ -18,6 +17,18 @@ from .models import (
     SubCategory, Brand, Product, ProductImage, ProductAvailability, Rating, Color, Pill,
     FreeShippingOffer, OverTaxConfig
 )
+
+
+def absolute_media_url(serializer, file_field):
+    if not file_field:
+        return None
+    if not hasattr(file_field, 'url'):
+        return file_field
+
+    request = serializer.context.get('request')
+    if request:
+        return request.build_absolute_uri(file_field.url)
+    return file_field.url
 
 class SubCategorySerializer(serializers.ModelSerializer):
     category_name = serializers.SerializerMethodField()
@@ -31,15 +42,24 @@ class SubCategorySerializer(serializers.ModelSerializer):
     
 class CategorySerializer(serializers.ModelSerializer):
     subcategories = SubCategorySerializer(many=True, read_only=True)
+    image = serializers.SerializerMethodField()
 
     class Meta:
         model = Category
         fields = ['id', 'name', 'image', 'subcategories','type']
 
+    def get_image(self, obj):
+        return absolute_media_url(self, obj.image)
+
 class BrandSerializer(serializers.ModelSerializer):
+    logo = serializers.SerializerMethodField()
+
     class Meta:
         model = Brand
         fields = '__all__'
+
+    def get_logo(self, obj):
+        return absolute_media_url(self, obj.logo)
 
 class SimpleCategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -60,6 +80,11 @@ class SimpleProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = ['id', 'name', 'category', 'sub_category', 'brand']
+
+class SimpleColorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Color
+        fields = ['id', 'name']
 
 class ProductDescriptionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -83,9 +108,14 @@ class BulkProductDescriptionSerializer(serializers.ListSerializer):
         return ProductDescription.objects.bulk_create(descriptions)
 
 class ProductImageSerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()
+
     class Meta:
         model = ProductImage
         fields = '__all__'
+
+    def get_image(self, obj):
+        return absolute_media_url(self, obj.image)
 
 class ColorSerializer(serializers.ModelSerializer):
     class Meta:
@@ -167,6 +197,7 @@ class ProductSerializer(serializers.ModelSerializer):
     current_discount = serializers.SerializerMethodField()
     discount_expiry = serializers.SerializerMethodField()
     is_low_stock = serializers.SerializerMethodField()
+    base_image = serializers.SerializerMethodField()
     descriptions = ProductDescriptionSerializer(many=True, read_only=True)
     category_id = serializers.SerializerMethodField()
     category_name = serializers.SerializerMethodField()
@@ -276,14 +307,7 @@ class ProductSerializer(serializers.ModelSerializer):
 
     def get_main_image(self, obj):
         main_image = obj.main_image()
-        print(f"Main image type: {type(main_image)}")  # Debug output
-        if main_image and hasattr(main_image, 'url'):
-            print(f"Main image URL: {main_image.url}")  # Debug output
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(main_image.url)
-            return main_image.url
-        return None
+        return absolute_media_url(self, main_image)
 
     def get_number_of_ratings(self, obj):
         return obj.number_of_ratings()
@@ -302,6 +326,9 @@ class ProductSerializer(serializers.ModelSerializer):
 
     def get_is_low_stock(self, obj):
         return obj.is_low_stock()
+
+    def get_base_image(self, obj):
+        return absolute_media_url(self, obj.base_image)
 
 class ProductBreifedSerializer(serializers.ModelSerializer):
     class Meta:
