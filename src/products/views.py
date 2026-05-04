@@ -3,6 +3,7 @@ import random
 import logging
 from django.shortcuts import get_object_or_404
 from django.db.models import Count, Sum, F
+from rest_framework.filters import SearchFilter
 
 logger = logging.getLogger(__name__)
 from django.utils import timezone
@@ -92,8 +93,12 @@ class SimpleProductListView(generics.ListAPIView):
     serializer_class = SimpleProductSerializer
     pagination_class = None
     permission_classes = [AllowAny]
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['category', 'sub_category', 'brand', 'type']
+    
+    filter_backends = [DjangoFilterBackend, SearchFilter] 
+    filterset_fields = ['id','category', 'sub_category', 'brand', 'type']
+    
+    search_fields = ['name']  
+
 
 class SimpleColorListView(generics.ListAPIView):
     queryset = Color.objects.all()

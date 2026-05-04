@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError, APIException
 
+
 class ValidationMessage(APIException):
     status_code = 400
     default_detail = 'Validation Error'
@@ -61,15 +62,19 @@ class BrandSerializer(serializers.ModelSerializer):
     def get_logo(self, obj):
         return absolute_media_url(self, obj.logo)
 
-class SimpleCategorySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Category
-        fields = ['id', 'name']
-
 class SimpleSubCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = SubCategory
         fields = ['id', 'name', 'category']
+
+
+class SimpleCategorySerializer(serializers.ModelSerializer):
+    subcategories = SimpleSubCategorySerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Category
+        fields = ['id', 'name', 'subcategories','type']
+
 
 class SimpleBrandSerializer(serializers.ModelSerializer):
     class Meta:
@@ -79,7 +84,7 @@ class SimpleBrandSerializer(serializers.ModelSerializer):
 class SimpleProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
-        fields = ['id', 'name', 'category', 'sub_category', 'brand']
+        fields = ['id', 'name', 'category', 'sub_category','brand']
 
 class SimpleColorSerializer(serializers.ModelSerializer):
     class Meta:
